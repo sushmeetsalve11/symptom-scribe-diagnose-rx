@@ -1,6 +1,6 @@
-
 import { Diagnosis } from "@/components/DiagnosisCard";
 import { MedicationInfo } from "@/components/PrescriptionRecommendation";
+import { analyzeText } from "./nlpService";
 
 // Mock symptom keywords to diagnosis mapping
 const symptomKeywordMap: Record<string, string[]> = {
@@ -424,31 +424,54 @@ const medicationDatabase: Record<string, MedicationInfo[]> = {
   ]
 };
 
-// Helper function to identify potential diagnoses based on symptoms
+// Enhanced helper function to identify potential diagnoses based on NLP analysis
 const identifyPotentialDiagnoses = (symptomText: string): [string[], string[]] => {
   const symptoms: string[] = [];
   const conditions = new Set<string>();
-
-  // Convert to lowercase and split into words
-  const text = symptomText.toLowerCase();
   
-  // Check for keyword matches in symptom text
-  Object.entries(symptomKeywordMap).forEach(([keyword, relatedConditions]) => {
-    if (text.includes(keyword)) {
-      symptoms.push(keyword);
-      relatedConditions.forEach(condition => conditions.add(condition));
+  // Use NLP to extract symptom entities
+  const nlpResult = analyzeText(symptomText);
+  const extractedSymptoms = nlpResult.extractedSymptoms;
+  
+  // Add extracted symptoms to the list
+  extractedSymptoms.forEach(symptom => {
+    symptoms.push(symptom);
+  });
+  
+  // Check for keyword matches in the extracted symptoms
+  extractedSymptoms.forEach(symptom => {
+    if (symptomKeywordMap[symptom]) {
+      symptomKeywordMap[symptom].forEach(condition => conditions.add(condition));
     }
   });
+  
+  // If no direct matches, fall back to the old text search method
+  if (conditions.size === 0) {
+    // Convert to lowercase for case-insensitive matching
+    const text = symptomText.toLowerCase();
+    
+    // Check for keyword matches in symptom text
+    Object.entries(symptomKeywordMap).forEach(([keyword, relatedConditions]) => {
+      if (text.includes(keyword)) {
+        symptoms.push(keyword);
+        relatedConditions.forEach(condition => conditions.add(condition));
+      }
+    });
+  }
 
   return [symptoms, Array.from(conditions)];
 };
 
-// Generate confidence scores for diagnoses based on symptom matches
+// Enhanced function to generate confidence scores with NLP insights
 const generateConfidenceScores = (
   symptoms: string[], 
-  conditions: string[]
+  conditions: string[],
+  originalText: string
 ): Diagnosis[] => {
   const diagnoses: Diagnosis[] = [];
+  
+  // Get NLP analysis for severity information
+  const nlpResult = analyzeText(originalText);
   
   // For each condition, calculate a confidence score
   conditions.forEach(conditionKey => {
@@ -460,12 +483,11 @@ const generateConfidenceScores = (
       conditionData.symptoms.includes(symptom)
     );
     
-    // Calculate simple confidence score (can be made more sophisticated)
+    // Calculate base confidence score
     const totalConditionSymptoms = conditionData.symptoms.length;
     const matchedSymptomCount = matchingSymptoms.length;
     
     // Base confidence on % of condition's symptoms that were matched
-    // Add some randomness to make results interesting
     let confidence = Math.min(
       95, 
       Math.max(
@@ -476,6 +498,34 @@ const generateConfidenceScores = (
         )
       )
     );
+    
+    // Apply NLP-based adjustments
+    
+    // 1. Adjust based on symptom severity
+    const severeSymptomCount = matchingSymptoms.filter(symptom => 
+      nlpResult.severityIndicators[symptom] === 'severe'
+    ).length;
+    
+    // Increase confidence if severe symptoms are present
+    if (severeSymptomCount > 0) {
+      confidence = Math.min(95, confidence + (severeSymptomCount * 5));
+    }
+    
+    // 2. Adjust based on duration
+    const hasDurationInfo = nlpResult.detectedTimeframes.length > 0;
+    if (hasDurationInfo) {
+      // Specific conditions are more likely with longer durations
+      const longTermConditions = ['sinusitis', 'allergies', 'asthma'];
+      const hasLongDuration = nlpResult.detectedTimeframes.some(d => 
+        d.includes('week') || d.includes('month') || d.includes('year')
+      );
+      
+      if (hasLongDuration && longTermConditions.includes(conditionKey)) {
+        confidence = Math.min(95, confidence + 10);
+      } else if (hasLongDuration && !longTermConditions.includes(conditionKey)) {
+        confidence = Math.max(30, confidence - 5);
+      }
+    }
     
     // COVID-19 special case - don't overrepresent
     if (conditionKey === "covid-19" && matchedSymptomCount < 3) {
@@ -502,7 +552,7 @@ const getMedicationSuggestions = (condition: string): MedicationInfo[] => {
   return medicationDatabase[condition] || [];
 };
 
-// Mock diagnostic analysis - simulates what would normally happen with ML models
+// Enhanced diagnostic analysis using NLP
 export const analyzeSymptomsAndGetDiagnoses = async (
   symptomText: string
 ): Promise<Diagnosis[]> => {
@@ -526,7 +576,7 @@ export const analyzeSymptomsAndGetDiagnoses = async (
   }
   
   // Generate confidence scores and return diagnoses
-  return generateConfidenceScores(symptoms, conditions);
+  return generateConfidenceScores(symptoms, conditions, symptomText);
 };
 
 // Get recommended medications for a condition
@@ -547,7 +597,7 @@ export const getInitialMessages = () => {
     },
     {
       id: "welcome-2",
-      content: "Please describe your symptoms in detail. For example: 'I have a headache, fever, and sore throat that started yesterday.'",
+      content: "Please describe your symptoms in detail. For example: 'I've had a severe headache and fever for the past 3 days, along with a sore throat.'",
       sender: 'bot' as const,
       timestamp: new Date()
     },

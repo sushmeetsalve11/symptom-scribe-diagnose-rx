@@ -14,9 +14,10 @@ export const Disclaimer: React.FC<DisclaimerProps> = ({ className }) => {
       <AlertTriangle className="h-5 w-5" />
       <AlertTitle className="font-semibold">Medical Disclaimer</AlertTitle>
       <AlertDescription className="text-sm">
-        This app provides information for educational purposes only and is not a substitute for professional 
-        medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified 
-        health provider with any questions you may have regarding a medical condition.
+        This app uses Natural Language Processing to analyze symptoms for educational purposes only and is not a substitute 
+        for professional medical advice, diagnosis, or treatment. The NLP analysis is limited and may not capture all medical 
+        nuances. Always seek the advice of your physician or other qualified health provider with any questions you may have 
+        regarding a medical condition.
       </AlertDescription>
     </Alert>
   );
