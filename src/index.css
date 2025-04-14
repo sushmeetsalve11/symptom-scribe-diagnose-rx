@@ -34,20 +34,37 @@
 
     --radius: 0.5rem;
 
+    /* Medical theme colors */
+    --medical-50: 204 100% 97%;
+    --medical-100: 204 94% 94%;
+    --medical-200: 201 94% 86%;
+    --medical-300: 199 95% 74%;
+    --medical-400: 198 93% 60%;
+    --medical-500: 200 98% 39%;
+    --medical-600: 201 100% 36%;
+    --medical-700: 202 100% 29%;
+    --medical-800: 203 100% 24%;
+    --medical-900: 205 100% 21%;
+
+    /* Symptom theme colors */
+    --symptom-50: 166 100% 97%;
+    --symptom-100: 167 85% 89%;
+    --symptom-200: 168 84% 78%;
+    --symptom-300: 170 84% 67%;
+    --symptom-400: 172 72% 55%;
+    --symptom-500: 173 58% 39%;
+    --symptom-600: 174 60% 31%;
+    --symptom-700: 175 62% 25%;
+    --symptom-800: 176 61% 20%;
+    --symptom-900: 178 58% 17%;
+
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
